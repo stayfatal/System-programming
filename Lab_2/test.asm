@@ -1,48 +1,60 @@
-format ELF64
-
+format elf64
 public _start
-
-section '.bss' writable
-  place db 1
-  buffer rb 256
-
-section '.text' executable
 
 include 'func.asm'
 
+section '.bss' writable
+  line rb 256
+  buffer rb 1
+
 _start:
+  pop rcx 
+  cmp rcx, 1 
+  je .l1 
+
+  mov rdi,[rsp+8] 
+  mov rax, 2 
+  mov rsi, 0o 
+  syscall 
+  cmp rax, 0 
+  jl .l1 
+  
+  mov r8, rax
+  
+  mov rax, 8
+  mov rdi, r8
+  mov rsi, 0
+  mov rdx, 2
+  syscall
+
+  mov r10, rax ;сохраняем длину файла
+  xor rbx, rbx
+.loop:
+  cmp r10, 0
+  jl .l2
+  mov rax, 0
+  mov rdi, r8
   mov rsi, buffer
-  call input_keyboard
+  mov rdx, 1 
+  syscall 
+  mov rcx, [rsi]
+  mov byte [line+rbx], cl
 
-  mov rax, buffer
-  call len_str
+  inc rbx 
+  dec r10
+  mov rax, 8
+  mov rdi, r8
+  mov rsi, r10
+  mov rdx, 0
+  syscall
+  jmp .loop
+   
+.l2:
+  call print_str
+  call new_line
+  mov rdi, r8
+  mov rax, 3
+  syscall
 
-  mov rcx, rax
-  dec rcx
-  .loop:
-    mov bl, [buffer+rcx]
-    mov [place], bl
-
-    mov rsi, place
-    call print
-
-    dec rcx
-    cmp rcx, -1
-    jg .loop
-
+.l1:
   call exit
-
-  print:
-    push rax
-    push rdi
-    push rdx
-    push rcx
-    mov rdx, 1
-    mov rax, 1
-    mov rdi, 1
-    syscall
-    pop rcx
-    pop rdx
-    pop rdi
-    pop rax
-    ret
